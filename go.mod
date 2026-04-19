@@ -1,4 +1,4 @@
-module github.com/derrick-wippler-anchor/flake
+module github.com/thrawn01/flake
 
 go 1.23.0
 

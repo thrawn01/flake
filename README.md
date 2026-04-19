@@ -22,7 +22,7 @@ A CLI tool to run Go tests repeatedly until they fail, useful for detecting flak
 
 ```bash
 # To install from github
-go install github.com/derrick-wippler-anchor/flake@latest
+go install github.com/thrawn01/flake@latest
 
 # Or checkout the code and run
 make install
