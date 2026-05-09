@@ -18,11 +18,12 @@ import (
 
 func main() {
 	var attempts int
-	var help bool
-	var mcp bool
+	var help, mcp, noSpinner bool
 	flag.IntVar(&attempts, "attempts", 100, "Maximum number of test attempts")
 	flag.BoolVar(&help, "h", false, "Show help")
 	flag.BoolVar(&mcp, "mcp", false, "Run as MCP server for agentic clients")
+	flag.BoolVar(&noSpinner, "s", false, "Disable spinner")
+	flag.BoolVar(&noSpinner, "no-spinner", false, "Disable spinner")
 	flag.Parse()
 
 	if help {
@@ -39,7 +40,7 @@ func main() {
 	}
 
 	fi, _ := os.Stdout.Stat()
-	isTerminal := (fi.Mode() & os.ModeCharDevice) != 0
+	isTerminal := !noSpinner && (fi.Mode()&os.ModeCharDevice) != 0
 	result := runFlakeTests(".", attempts, isTerminal)
 	if result.Failed {
 		os.Exit(1)
@@ -66,9 +67,7 @@ func runFlakeTests(directory string, attempts int, interactive bool) FlakeResult
 		cancel()
 	}()
 
-	if interactive {
-		fmt.Printf("Running 'go test -race -count=1 -v ./...' up to %d times (use -h for help)\n", attempts)
-	}
+	fmt.Printf("Running 'go test -race -count=1 -v ./...' up to %d times (use -h for help)\n", attempts)
 
 	for i := 1; i <= attempts; i++ {
 		// Check if context is cancelled
@@ -76,8 +75,9 @@ func runFlakeTests(directory string, attempts int, interactive bool) FlakeResult
 		case <-ctx.Done():
 			msg := fmt.Sprintf("Interrupted after %d attempts", i-1)
 			if interactive {
-				fmt.Printf("\n%s\n", msg)
+				fmt.Print("\n")
 			}
+			fmt.Printf("%s\n", msg)
 			return FlakeResult{
 				Failed:      false,
 				Attempts:    i - 1,
@@ -128,8 +128,9 @@ func runFlakeTests(directory string, attempts int, interactive bool) FlakeResult
 			if ctx.Err() != nil {
 				message := fmt.Sprintf("Interrupted after %d attempts", i-1)
 				if interactive {
-					fmt.Printf("\n%s\n", message)
+					fmt.Print("\n")
 				}
+				fmt.Printf("%s\n", message)
 				return FlakeResult{
 					Failed:      false,
 					Attempts:    i - 1,
@@ -140,9 +141,14 @@ func runFlakeTests(directory string, attempts int, interactive bool) FlakeResult
 			// Test failed
 			msg := fmt.Sprintf("Test failed on attempt %d", i)
 			if interactive {
-				fmt.Printf("\n%s:\n", msg)
-				fmt.Print(string(output))
+				fmt.Print("\n")
+			}
+			fmt.Printf("%s:\n", msg)
+			fmt.Print(string(output))
+			if interactive {
 				fmt.Printf("\033[31mTest failed after %d attempts\033[0m\n", i)
+			} else {
+				fmt.Printf("Test failed after %d attempts\n", i)
 			}
 			return FlakeResult{
 				Failed:       true,
@@ -153,16 +159,13 @@ func runFlakeTests(directory string, attempts int, interactive bool) FlakeResult
 		}
 
 		// Test passed - print dot without newline
-		if interactive {
-			fmt.Print(".")
-		}
+		fmt.Print(".")
+
 	}
 
 	// All attempts completed successfully
 	msg := fmt.Sprintf("All %d test attempts passed successfully!", attempts)
-	if interactive {
-		fmt.Printf("\n%s\n", msg)
-	}
+	fmt.Printf("\n%s\n", msg)
 	return FlakeResult{
 		Failed:   false,
 		Attempts: attempts,
