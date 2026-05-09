@@ -38,7 +38,9 @@ func main() {
 		return
 	}
 
-	result := runFlakeTests(".", attempts, true)
+	fi, _ := os.Stdout.Stat()
+	isTerminal := (fi.Mode() & os.ModeCharDevice) != 0
+	result := runFlakeTests(".", attempts, isTerminal)
 	if result.Failed {
 		os.Exit(1)
 	}
