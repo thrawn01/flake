@@ -74,7 +74,7 @@ func runFlakeTests(directory string, attempts int, interactive bool) FlakeResult
 		select {
 		case <-ctx.Done():
 			msg := fmt.Sprintf("Interrupted after %d attempts", i-1)
-			if interactive {
+			if i > 1 || interactive {
 				fmt.Print("\n")
 			}
 			fmt.Printf("%s\n", msg)
@@ -140,7 +140,7 @@ func runFlakeTests(directory string, attempts int, interactive bool) FlakeResult
 			}
 			// Test failed
 			msg := fmt.Sprintf("Test failed on attempt %d", i)
-			if interactive {
+			if i > 1 || interactive {
 				fmt.Print("\n")
 			}
 			fmt.Printf("%s:\n", msg)
